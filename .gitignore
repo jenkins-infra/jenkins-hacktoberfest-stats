@@ -1,0 +1,4 @@
+jenkinsci*.json
+jenkins-infra*.json
+hacktoberfest*.csv
+.vsc/
