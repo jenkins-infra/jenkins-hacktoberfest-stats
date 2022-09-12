@@ -11,7 +11,7 @@
 #  - PR Author
 #  - Is flag “Hacktoberfest-approved” set?
 # Matching the following conditions:
-#  - PRs in all repositories of jenkinsciand jenkins-infra
+#  - PRs in all repositories of jenkinsci and jenkins-infra
 #  - Created after 01-OCT-2022
 #  - Title contains “hacktoberfest” (case insensitive)
 #  - Status is either open or merged
@@ -62,7 +62,7 @@ getOrganizationData() {
   local json_filename="$org"
 
   if ! $no_api; then
-    rm -i "$json_filename"*.json
+    rm "$json_filename"*.json
     local url_encoded_query
     url_encoded_query=$(jq --arg query "org:$org $query" --raw-output --null-input '$query|@uri')
     page=1
