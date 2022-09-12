@@ -24,7 +24,8 @@ tag='Hacktoberfest-accepted, Hacktoberfest-approved'
 # Spec: Title contains “hacktoberfest” (case insensitive)
 title='Hacktoberfest'
 # csv files
-filename='hacktoberfest'
+current_time=$(date "+%Y%m%d-%H%M%S")
+filename="hacktoberfest_$current_time"
 # do not request GH api, use only the existing files
 no_api=false
 ##
