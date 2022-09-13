@@ -35,34 +35,6 @@ filename="hacktoberfest_$current_time.csv"
 no_api=false
 ##
 
-read -r -d '' jq_script <<'JQ_SCRIPT'
-($accepted_arg | split(",") | map(ltrimstr(" ") | rtrimstr(" ") | ascii_downcase) ) as $accepted_arr
-| map(.items)
-| add
-| map(
-    select(
-      # Spec: - Status is either open or merged
-      (.state == "open" or .pull_request.merged_at != null)
-      )
-    # Spec: Produce a CSV list of PRs with following details: PR URL, PR Title, Repository, Status (Open, Merged), Creation date, Merge date (if applicable), PR Author, Is flag “Hacktoberfest-approved” set?
-    | [
-        $org,
-        .html_url,
-        .title,
-        # Hacky, but requires far less API calls
-        (.repository_url | split("/") | last),
-        .state,
-        .created_at,
-        .merged_at,
-        .user.login,
-        ([$accepted_arr[] as $accepted | any(.labels[]; .name | ascii_downcase == $accepted)] | any), # Spec: Is flag “Hacktoberfest-approved” set?
-         any(.labels[]; .name | ascii_downcase | test($spam; "i")), # Spec: Additional labels should be reported in the result (true/false): spam
-         any(.labels[]; .name | ascii_downcase | test($invalid; "i")) # Spec: Additional labels should be reported in the result (true/false): invalid
-      ]
-  )[]
-| @csv
-JQ_SCRIPT
-
 getOrganizationData() {
   local org="$1"
   local json_filename="$org"
@@ -83,7 +55,7 @@ getOrganizationData() {
     done
   fi
 
-  jq --arg org "$org" --arg accepted_arg "$label_accepted" --arg spam "$label_spam_regex" --arg invalid "$label_invalid_regex" --raw-output --slurp "${jq_script[*]}" "$json_filename"*.json >>"$filename"
+  jq --arg org "$org" --arg accepted_arg "$label_accepted" --arg spam "$label_spam_regex" --arg invalid "$label_invalid_regex" --raw-output --slurp --from-file json_to_csv.jq "$json_filename"*.json >>"$filename"
 }
 
 # Spec: Produce a CSV list of PRs with following details: PR URL, PR Title, Repository, Status (Open, Merged), Creation date, Merge date (if applicable), PR Author, Is flag “Hacktoberfest-approved” set?
