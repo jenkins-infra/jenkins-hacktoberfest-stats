@@ -10,6 +10,7 @@
 #  - Merge date (if applicable)
 #  - PR Author
 #  - Is flag “Hacktoberfest-approved” set?
+#  - Additional labels should be reported in the result (true/false): /\bspam\b/i, /\binvalid\b/i
 # Matching the following conditions:
 #  - PRs in all repositories of jenkinsci and jenkins-infra
 #  - Created after 01-OCT-2022
@@ -22,16 +23,20 @@
 # Spec: Created after 01-OCT-2022
 query='label:hacktoberfest is:pr created:>2012-12-31'
 # Spec: Is flag “Hacktoberfest-approved” set? (case insensitive)
-tag='Hacktoberfest-accepted, Hacktoberfest-approved'
+label_accepted='Hacktoberfest-accepted, Hacktoberfest-approved'
+#  - Additional labels should be reported in the result (true/false): spam, invalid
+label_spam_regex='\bspam\b'
+#  - Additional labels should be reported in the result (true/false): spam, invalid
+label_invalid_regex='\binvalid\b'
 # csv files
 current_time=$(date "+%Y%m%d-%H%M%S")
-filename="hacktoberfest_$current_time"
+filename="hacktoberfest_$current_time.csv"
 # do not request GH api, use only the existing files
 no_api=false
 ##
 
 read -r -d '' jq_script <<'JQ_SCRIPT'
-($tagstr | split(",") | map(ltrimstr(" ") | rtrimstr(" ") | ascii_downcase) ) as $tags
+($accepted_arg | split(",") | map(ltrimstr(" ") | rtrimstr(" ") | ascii_downcase) ) as $accepted_arr
 | map(.items)
 | add
 | map(
@@ -50,7 +55,9 @@ read -r -d '' jq_script <<'JQ_SCRIPT'
         .created_at,
         .merged_at,
         .user.login,
-        ([$tags[] as $tag | any(.labels[]; .name | ascii_downcase == $tag)] | any)
+        ([$accepted_arr[] as $accepted | any(.labels[]; .name | ascii_downcase == $accepted)] | any), # Spec: Is flag “Hacktoberfest-approved” set?
+         any(.labels[]; .name | ascii_downcase | test($spam; "i")), # Spec: Additional labels should be reported in the result (true/false): spam
+         any(.labels[]; .name | ascii_downcase | test($invalid; "i")) # Spec: Additional labels should be reported in the result (true/false): invalid
       ]
   )[]
 | @csv
@@ -76,11 +83,11 @@ getOrganizationData() {
     done
   fi
 
-  jq --arg org "$org" --arg tagstr "$tag" --raw-output --slurp "${jq_script[*]}" "$json_filename"*.json >>"$filename.csv"
+  jq --arg org "$org" --arg accepted_arg "$label_accepted" --arg spam "$label_spam_regex" --arg invalid "$label_invalid_regex" --raw-output --slurp "${jq_script[*]}" "$json_filename"*.json >>"$filename"
 }
 
 # Spec: Produce a CSV list of PRs with following details: PR URL, PR Title, Repository, Status (Open, Merged), Creation date, Merge date (if applicable), PR Author, Is flag “Hacktoberfest-approved” set?
-echo 'org,url,title,repository,state,created_at,merged_at,user.login,Hacktoberfest-approved' >"$filename.csv"
+echo 'org,url,title,repository,state,created_at,merged_at,user.login,approved,spam,invalid' >"$filename"
 
 # seems not possible to query both org at the same time
 # Spec: PRs in all repositories of jenkinsci and jenkins-infra
