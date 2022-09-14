@@ -1,0 +1,32 @@
+{
+  "total_count": 1,
+  "incomplete_results": false,
+  "items": [
+    {
+      "repository_url": "https://api.github.com/repos/jenkinsci/workflow-api-plugin",
+      "html_url": "https://github.com/jenkinsci/workflow-api-plugin/pull/107",
+      "title": "Fix bad assertion in TestVisitor#assertNoIllegalNullsInEvents",
+      "user": {
+        "login": "bats"
+      },
+      "labels": [
+        {
+          "name": "foo"
+        },
+        {
+          "name": "other_label"
+        }
+      ],
+      "state": "closed",
+      "locked": false,
+      "created_at": "2019-10-04T15:53:45Z",
+      "updated_at": "2021-11-23T17:51:50Z",
+      "closed_at": "2019-11-19T20:43:26Z",
+      "draft": false,
+      "pull_request": {
+        "html_url": "https://github.com/jenkinsci/workflow-api-plugin/pull/107",
+        "merged_at": "2019-11-19T20:43:26Z"
+      }
+    }
+  ]
+}
