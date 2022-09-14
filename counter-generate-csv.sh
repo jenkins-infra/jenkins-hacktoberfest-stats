@@ -13,16 +13,16 @@
 # Matching the following conditions:
 #  - PRs in all repositories of jenkinsci and jenkins-infra
 #  - Created after 01-OCT-2022
-#  - Title contains “hacktoberfest” (case insensitive)
+#  - Labeled as hacktoberfest
 #  - Status is either open or merged
 
 ## config
+# Spec: Labeled as hacktoberfest
+# Spec: It is a PR
 # Spec: Created after 01-OCT-2022
 query='label:hacktoberfest is:pr created:>2012-12-31'
 # Spec: Is flag “Hacktoberfest-approved” set? (case insensitive)
 tag='Hacktoberfest-accepted, Hacktoberfest-approved'
-# Spec: Title contains “hacktoberfest” (case insensitive)
-title='Hacktoberfest'
 # csv files
 current_time=$(date "+%Y%m%d-%H%M%S")
 filename="hacktoberfest_$current_time"
@@ -38,8 +38,6 @@ read -r -d '' jq_script <<'JQ_SCRIPT'
     select(
       # Spec: - Status is either open or merged
       (.state == "open" or .pull_request.merged_at != null)
-      # Spec: Title contains “hacktoberfest” (case insensitive)
-      and ( .title | ascii_downcase | contains($title | ascii_downcase) )
       )
     # Spec: Produce a CSV list of PRs with following details: PR URL, PR Title, Repository, Status (Open, Merged), Creation date, Merge date (if applicable), PR Author, Is flag “Hacktoberfest-approved” set?
     | [
@@ -66,7 +64,7 @@ getOrganizationData() {
     rm "$json_filename"*.json
     local url_encoded_query
     url_encoded_query=$(jq --arg query "org:$org $query" --raw-output --null-input '$query|@uri')
-    page=1
+    local page=1
     while true; do
       echo "org: $org get page $page"
       gh api -H "Accept: application/vnd.github+json" "/search/issues?q=$url_encoded_query&sort=updated&order=desc&per_page=100&page=$page" >"$json_filename$page.json"
@@ -78,7 +76,7 @@ getOrganizationData() {
     done
   fi
 
-  jq --arg org "$org" --arg tagstr "$tag" --arg title "$title" --raw-output --slurp "${jq_script[*]}" "$json_filename"*.json >>"$filename.csv"
+  jq --arg org "$org" --arg tagstr "$tag" --raw-output --slurp "${jq_script[*]}" "$json_filename"*.json >>"$filename.csv"
 }
 
 # Spec: Produce a CSV list of PRs with following details: PR URL, PR Title, Repository, Status (Open, Merged), Creation date, Merge date (if applicable), PR Author, Is flag “Hacktoberfest-approved” set?
