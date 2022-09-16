@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+## config
+query='org:jenkinsci org:jenkins-infra org:jenkins-zh org:stapler topic:hacktoberfest'
+# csv files
+current_time=$(date "+%Y%m%d-%H%M%S")
+filename="hacktoberfest_repositories_$current_time.csv"
+##
+
+getRepositories() {
+  local json_filename="hacktoberfest-repositories"
+
+  rm "$json_filename"*.json
+  local url_encoded_query
+  url_encoded_query=$(jq --arg query "$query" --raw-output --null-input '$query|@uri')
+  local page=1
+  while true; do
+    echo "$json_filename get page $page"
+    gh api -H "Accept: application/vnd.github+json" "/search/repositories?q=$url_encoded_query&sort=updated&order=desc&per_page=100&page=$page" >"$json_filename$page.json"
+    # less accurate, can make 1 useless call if the number of issues is a multiple of 100
+    if test "$(jq --raw-output '.items|length' "$json_filename$page.json")" -ne 100; then
+      break
+    fi
+    ((page++))
+  done
+
+  jq --raw-output --slurp --from-file json_to_repositories.jq "$json_filename"*.json >>"$filename"
+}
+
+echo 'org,url' >"$filename"
+
+getRepositories
