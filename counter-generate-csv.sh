@@ -65,6 +65,8 @@ echo 'org,url,title,repository,state,created_at,merged_at,user.login,approved,sp
 getOrganizationData jenkinsci
 getOrganizationData jenkins-infra
 
-cat $filename | datamash -t, --sort --headers groupby 8 count 8 > "$summaryFileContribs"
+#https://medium.com/clarityai-engineering/back-to-basics-how-to-analyze-files-with-gnu-commands-fe9f41665eb3
+# awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' hacktoberfest_20220928-162143.csv
+awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' $filename | datamash -t, --sort --headers groupby 8 count 8 > "$summaryFileContribs"
 echo "----------------------------------------"
 cat $summaryFileContribs

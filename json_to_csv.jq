@@ -15,7 +15,7 @@
         (.repository_url | split("/") | last),
         .state,
         .created_at,
-        .merged_at,
+        .pull_request.merged_at,
         .user.login,
         ([$accepted_arr[] as $accepted | any(.labels[]; .name | ascii_downcase == $accepted)] | any), # Spec: Is flag “Hacktoberfest-approved” set?
          any(.labels[]; .name | test($spam; "i")), # Spec: Additional labels should be reported in the result (true/false): spam
