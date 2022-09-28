@@ -21,7 +21,9 @@
 # Spec: Labeled as hacktoberfest
 # Spec: It is a PR
 # Spec: Created after 01-OCT-2022
+# query='label:hacktoberfest is:pr created:>2022-10-01'
 query='label:hacktoberfest is:pr created:>2012-12-31'
+
 # Spec: Is flag “Hacktoberfest-approved” set? (case insensitive)
 label_accepted='Hacktoberfest-accepted, Hacktoberfest-approved'
 #  - Additional labels should be reported in the result (true/false): spam, invalid
@@ -31,6 +33,7 @@ label_invalid_regex='\binvalid\b'
 # csv files
 current_time=$(date "+%Y%m%d-%H%M%S")
 filename="hacktoberfest_$current_time.csv"
+summaryFileContribs="hacktoberfest_contribs_$current_time.csv"
 ##
 
 getOrganizationData() {
@@ -61,3 +64,7 @@ echo 'org,url,title,repository,state,created_at,merged_at,user.login,approved,sp
 # Spec: PRs in all repositories of jenkinsci and jenkins-infra
 getOrganizationData jenkinsci
 getOrganizationData jenkins-infra
+
+cat $filename | datamash -t, --sort --headers groupby 8 count 8 > "$summaryFileContribs"
+echo "----------------------------------------"
+cat $summaryFileContribs
