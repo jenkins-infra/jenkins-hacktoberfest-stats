@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
 ## config
-query='org:jenkinsci org:jenkins-infra org:jenkins-zh org:stapler topic:hacktoberfest'
+query='org:jenkinsci org:jenkins-infra org:stapler topic:hacktoberfest'
 # csv files
 current_time=$(date "+%Y%m%d-%H%M%S")
 filename="hacktoberfest_repositories_$current_time.csv"
+summary_filename="hacktoberfest_repositories_summary_$current_time.csv"
 ##
 
 getRepositories() {
@@ -30,3 +31,6 @@ getRepositories() {
 echo 'org,url' >"$filename"
 
 getRepositories
+
+cat $filename | datamash -t, --sort --headers groupby 1 count 1 > "$summary_filename"
+cat $summary_filename
