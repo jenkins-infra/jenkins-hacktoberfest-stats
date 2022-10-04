@@ -21,8 +21,8 @@
 # Spec: Labeled as hacktoberfest
 # Spec: It is a PR
 # Spec: Created after 01-OCT-2022
-# query='label:hacktoberfest is:pr created:>2022-10-01'
-query='label:hacktoberfest is:pr created:>2012-12-31'
+query='label:hacktoberfest is:pr created:>2022-10-01'
+#query='label:hacktoberfest is:pr created:>2012-12-31'
 
 # Spec: Is flag “Hacktoberfest-approved” set? (case insensitive)
 label_accepted='Hacktoberfest-accepted, Hacktoberfest-approved'
