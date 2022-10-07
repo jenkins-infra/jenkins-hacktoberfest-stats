@@ -40,7 +40,7 @@ getOrganizationData() {
   local org="$1"
   local json_filename="$org"
 
-  rm "$json_filename"*.json
+  rm -f "$json_filename"*.json
   local url_encoded_query
   url_encoded_query=$(jq --arg query "org:$org $query" --raw-output --null-input '$query|@uri')
   local page=1

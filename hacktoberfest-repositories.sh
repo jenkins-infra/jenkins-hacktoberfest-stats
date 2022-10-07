@@ -11,7 +11,7 @@ summary_filename="hacktoberfest_repositories_summary_$current_time.csv"
 getRepositories() {
   local json_filename="hacktoberfest-repositories"
 
-  rm "$json_filename"*.json
+  rm -f "$json_filename"*.json
   local url_encoded_query
   url_encoded_query=$(jq --arg query "$query" --raw-output --null-input '$query|@uri')
   local page=1

@@ -3,3 +3,4 @@ jenkins-infra*.json
 hacktoberfest-repo*.json
 hacktoberfest*.csv
 .vsc/
+.idea
