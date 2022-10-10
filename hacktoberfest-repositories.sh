@@ -28,7 +28,7 @@ getRepositories() {
   jq --raw-output --slurp --from-file json_to_repositories.jq "$json_filename"*.json >>"$filename"
 }
 
-echo 'org,url' >"$filename"
+echo 'org,name,url' >"$filename"
 
 getRepositories
 

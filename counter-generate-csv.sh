@@ -1,28 +1,10 @@
 #!/usr/bin/env bash
 
-## Specifications:
-# Produce a CSV list of PRs with following details
-#  - PR URL
-#  - PR Title
-#  - Repository
-#  - Status (Open, Merged)
-#  - Creation date
-#  - Merge date (if applicable)
-#  - PR Author
-#  - Is flag “Hacktoberfest-approved” set?
-#  - Additional labels should be reported in the result (true/false): /\bspam\b/i, /\binvalid\b/i
-# Matching the following conditions:
-#  - PRs in all repositories of jenkinsci and jenkins-infra
-#  - Created after 01-OCT-2022
-#  - Labeled as hacktoberfest
-#  - Status is either open or merged
 
-## config
-# Spec: Labeled as hacktoberfest
-# Spec: It is a PR
-# Spec: Created after 01-OCT-2022
-query='label:hacktoberfest is:pr created:>2022-10-01'
-#query='label:hacktoberfest is:pr created:>2012-12-31'
+query='is:pr -label:dependencies created:>2022-10-01'
+
+#Spec: is "hacktoberfest" flag set? 
+label_hacktoberfest='\bhacktoberfest\b'
 
 # Spec: Is flag “Hacktoberfest-approved” set? (case insensitive)
 label_accepted='Hacktoberfest-accepted, Hacktoberfest-approved'
@@ -32,8 +14,8 @@ label_spam_regex='\bspam\b'
 label_invalid_regex='\binvalid\b'
 # csv files
 current_time=$(date "+%Y%m%d-%H%M%S")
-filename="hacktoberfest_$current_time.csv"
-summaryFileContribs="hacktoberfest_contribs_$current_time.csv"
+filename="data/hacktoberfest_$current_time.csv"
+summaryFileContribs="data/hacktoberfest_contribs_$current_time.csv"
 ##
 
 getOrganizationData() {
@@ -54,19 +36,19 @@ getOrganizationData() {
     ((page++))
   done
 
-  jq --arg org "$org" --arg accepted_arg "$label_accepted" --arg spam "$label_spam_regex" --arg invalid "$label_invalid_regex" --raw-output --slurp --from-file json_to_csv.jq "$json_filename"*.json >>"$filename"
+  jq --arg org "$org" --arg hacktoberfest_labeled "$label_hacktoberfest" --arg accepted_arg "$label_accepted" --arg spam "$label_spam_regex" --arg invalid "$label_invalid_regex" --raw-output --slurp --from-file json_to_csv.jq "$json_filename"*.json >>"$filename"
 }
 
 # Spec: Produce a CSV list of PRs with following details: PR URL, PR Title, Repository, Status (Open, Merged), Creation date, Merge date (if applicable), PR Author, Is flag “Hacktoberfest-approved” set?
-echo 'org,url,title,repository,state,created_at,merged_at,user.login,approved,spam,invalid' >"$filename"
+echo 'org,url,title,repository,state,created_at,merged_at,user.login,is_hacktoberfest_labeled,approved,spam,invalid' >"$filename"
 
 # seems not possible to query both org at the same time
 # Spec: PRs in all repositories of jenkinsci and jenkins-infra
 getOrganizationData jenkinsci
 getOrganizationData jenkins-infra
 
-#https://medium.com/clarityai-engineering/back-to-basics-how-to-analyze-files-with-gnu-commands-fe9f41665eb3
-# awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' hacktoberfest_20220928-162143.csv
-awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' $filename | datamash -t, --sort --headers groupby 8 count 8 > "$summaryFileContribs"
-echo "----------------------------------------"
-cat $summaryFileContribs
+# #https://medium.com/clarityai-engineering/back-to-basics-how-to-analyze-files-with-gnu-commands-fe9f41665eb3
+# # awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' hacktoberfest_20220928-162143.csv
+# awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' $filename | datamash -t, --sort --headers groupby 8 count 8 > "$summaryFileContribs"
+# echo "----------------------------------------"
+# cat $summaryFileContribs
