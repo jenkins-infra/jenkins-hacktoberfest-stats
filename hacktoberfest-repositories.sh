@@ -2,10 +2,15 @@
 
 ## config
 query='org:jenkinsci org:jenkins-infra org:stapler topic:hacktoberfest fork:true'
+
 # csv files
 current_time=$(date "+%Y%m%d-%H%M%S")
-filename="repo_data/hacktoberfest_repositories_$current_time.csv"
-summary_filename="repo_data/hacktoberfest_repositories_summary_$current_time.csv"
+data_filename_root="repo_data/hacktoberfest_repos"
+filename_latest="${data_filename_root}_latest.csv"
+summary_filename_latest="${data_filename_root}_summary_latest.csv"
+filename="${data_filename_root}_${current_time}.csv"
+summary_filename="${data_filename_root}_summary_$current_time.csv"
+
 # Create the data directory if it doesn't exist yet
 [ -d repo_data ] || mkdir repo_data
 ##
@@ -36,3 +41,7 @@ getRepositories
 
 cat $filename | datamash -t, --sort --headers groupby 1 count 1 > "$summary_filename"
 cat $summary_filename
+
+# update the latest
+cp $filename $filename_latest
+cp $summary_filename $summary_filename_latest

@@ -12,10 +12,15 @@ label_accepted='Hacktoberfest-accepted, Hacktoberfest-approved'
 label_spam_regex='\bspam\b'
 #  - Additional labels should be reported in the result (true/false): spam, invalid
 label_invalid_regex='\binvalid\b'
+
 # csv files
 current_time=$(date "+%Y%m%d-%H%M%S")
-filename="data/hacktoberfest_$current_time.csv"
-summaryFileContribs="data/hacktoberfest_contribs_$current_time.csv"
+data_filename_root="data/hacktoberfest"
+filename_latest="${data_filename_root}_latest.csv"
+summaryFileContribs_latest="${data_filename_root}_summary_latest.csv"
+filename="${data_filename_root}_${current_time}.csv"
+summaryFileContribs="${data_filename_root}_contribs_$current_time.csv"
+
 # create the data directory if it doesn't exist
 [ -d data ] || mkdir data
 ##
@@ -54,3 +59,7 @@ getOrganizationData jenkins-infra
 # awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' $filename | datamash -t, --sort --headers groupby 8 count 8 > "$summaryFileContribs"
 # echo "----------------------------------------"
 # cat $summaryFileContribs
+
+# update the latest
+cp $filename $filename_latest
+#cp $summaryFileContribs $summaryFileContribs_latest
