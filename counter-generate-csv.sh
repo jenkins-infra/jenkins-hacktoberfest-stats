@@ -16,6 +16,8 @@ label_invalid_regex='\binvalid\b'
 current_time=$(date "+%Y%m%d-%H%M%S")
 filename="data/hacktoberfest_$current_time.csv"
 summaryFileContribs="data/hacktoberfest_contribs_$current_time.csv"
+# create the data directory if it doesn't exist
+[ -d data ] || mkdir data
 ##
 
 getOrganizationData() {
