@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 
-query='is:pr -label:dependencies created:>2022-10-01'
+# We exclude the PRs created by dependabot
+query='is:pr -author:app/dependabot created:>2022-10-01'
 
 #Spec: is "hacktoberfest" flag set? 
 label_hacktoberfest='\bhacktoberfest\b'
