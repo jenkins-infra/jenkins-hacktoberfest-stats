@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ## config
-query='org:jenkinsci org:jenkins-infra org:stapler topic:hacktoberfest fork:true'
+query='org:jenkinsci org:jenkins-infra topic:hacktoberfest fork:true'
 
 # csv files
 current_time=$(date "+%Y%m%d-%H%M%S")
