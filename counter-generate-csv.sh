@@ -28,7 +28,7 @@ summaryFileContribs="${data_filename_root}_contribs_$current_time.csv"
 
 getOrganizationData() {
   local org="$1"
-  local json_filename="$org"
+  local json_filename="json_data/${org}"
 
   rm -f "$json_filename"*.json
   local url_encoded_query

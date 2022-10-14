@@ -16,7 +16,7 @@ summary_filename="${data_filename_root}_summary_$current_time.csv"
 ##
 
 getRepositories() {
-  local json_filename="hacktoberfest-repositories"
+  local json_filename="json_data/hacktoberfest-repositories"
 
   rm -f "$json_filename"*.json
   local url_encoded_query
