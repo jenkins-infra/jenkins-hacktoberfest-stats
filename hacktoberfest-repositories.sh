@@ -13,6 +13,7 @@ summary_filename="${data_filename_root}_summary_$current_time.csv"
 
 # Create the data directory if it doesn't exist yet
 [ -d repo_data ] || mkdir repo_data
+[ -d json_data ] || mkdir json_data
 ##
 
 getRepositories() {
@@ -39,8 +40,11 @@ echo 'org,name,url' >"$filename"
 
 getRepositories
 
+echo "----------------------------------"
 cat $filename | datamash -t, --sort --headers groupby 1 count 1 > "$summary_filename"
 cat $summary_filename
+echo "----------------------------------"
+
 
 # update the latest
 cp $filename $filename_latest
