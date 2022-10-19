@@ -28,6 +28,29 @@ summaryFileContribs="${data_filename_root}_contribs_$current_time.csv"
 [ -d json_data ] || mkdir json_data
 ##
 
+isAccepted() {
+  local merge_date="$2"
+  local hacktoberfest_approved="$1"
+
+  #is the merge_date empty?
+  if [ -z "$merge_date" ]
+  then
+    #echo "mergeDate: $merge_date"
+    # it has not been merged
+    if test "$hacktoberfest_approved" == "true"
+    then
+      echo "true"
+    else
+      echo "false"
+    fi
+  else
+        #echo "mergeDate (set): $merge_date"
+    # the PR has been merged
+    echo "true"
+  fi
+}
+
+# Loops through the raw CSV to see if the PR is a hacktoberfest candidate
 lookupHacktoberfestTopic() {
   local repos_csv_file="repo_data/hacktoberfest_repos_latest.csv"
   local raw_csv_file="$1"
@@ -36,7 +59,7 @@ lookupHacktoberfestTopic() {
   echo "output:  ${output_csv_file}"
 
   ## Create header in output
-  echo 'org,repository,is_hacktoberfest_repo,url,state,created_at,merged_at,user.login,is_hacktoberfest_labeled,approved,spam,invalid,title' >"$output_csv_file"
+  echo 'org,repository,is_hacktoberfest_repo,url,state,created_at,merged_at,user.login,is_hacktoberfest_labeled,approved,spam,invalid,hacktoberfest_complete,title' >"$output_csv_file"
 
   while IFS="," read -r org repository url state created_at merged_at user_login is_hacktoberfest_labeled approved spam invalid title
   do
@@ -45,13 +68,15 @@ lookupHacktoberfestTopic() {
     then
       is_hacktoberfest_repo="true"
       #echo "${trimmed_repository} - ${url}"
-      echo "$org,$repository,$is_hacktoberfest_repo,$url,$state,$created_at,$merged_at,$user_login,$is_hacktoberfest_labeled,$approved,$spam,$invalid,$title" >> "${output_csv_file}"
+      hacktoberfest_complete=$(isAccepted $approved $merged_at )
+      echo "$org,$repository,$is_hacktoberfest_repo,$url,$state,$created_at,$merged_at,$user_login,$is_hacktoberfest_labeled,$approved,$spam,$invalid,$hacktoberfest_complete,$title" >> "${output_csv_file}"
     else
       is_hacktoberfest_repo="false"
       # It might be a PR tagged "hacktoberfest" or "hacktoberfest-accepted"
       if test "$is_hacktoberfest_labeled" == "true" || test "$approved" == "true"
       then
-        echo "$org,$repository,$is_hacktoberfest_repo,$url,$state,$created_at,$merged_at,$user_login,$is_hacktoberfest_labeled,$approved,$spam,$invalid,$title" >> "${output_csv_file}"
+        hacktoberfest_complete=$(isAccepted $approved $merged_at)
+        echo "$org,$repository,$is_hacktoberfest_repo,$url,$state,$created_at,$merged_at,$user_login,$is_hacktoberfest_labeled,$approved,$spam,$invalid,$hacktoberfest_complete,$title" >> "${output_csv_file}"
       fi 
     fi
 
@@ -102,6 +127,6 @@ cp ${csv_filename} ${csv_filename_latest}
 
 # #https://medium.com/clarityai-engineering/back-to-basics-how-to-analyze-files-with-gnu-commands-fe9f41665eb3
 # # awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' hacktoberfest_20220928-162143.csv
-# awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' $filename | datamash -t, --sort --headers groupby 8 count 8 > "$summaryFileContribs"
+# awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' $filename | datamash -t, --sort --headers groupby 8 count 13 > "$summaryFileContribs"
 # echo "----------------------------------------"
 # cat $summaryFileContribs
