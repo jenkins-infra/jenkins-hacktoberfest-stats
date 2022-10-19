@@ -1,5 +1,32 @@
 #!/usr/bin/env bash
 
+######
+# this script retrieves informations from GitHub to track Hacktoberfest participation in the Jenkins project
+# The resulting data is enriched and made available as a CSV
+###### 
+
+set -e
+
+# check wether required tools are available
+if ! command -v "gh" >/dev/null 2>&1
+then
+  echo "ERROR: command line 'gh' required but not found. Exiting."
+  exit 1
+fi
+
+if ! command -v "jq" >/dev/null 2>&1
+then
+  echo "ERROR: command line 'jq' required but not found. Exiting."
+  exit 1
+fi
+
+if ! command -v "datamash" >/dev/null 2>&1
+then
+  echo "ERROR: command line 'datamash' required but not found. Exiting."
+  exit 1
+fi
+
+### Setting up constants
 
 # We exclude the PRs created by dependabot and renovate
 query='is:pr -author:app/dependabot -author:app/renovate created:>2022-10-01'
@@ -28,6 +55,7 @@ summaryFileContribs="${data_filename_root}_contribs_$current_time.csv"
 [ -d json_data ] || mkdir json_data
 ##
 
+# Function to facilitate checking whether a PR is complete and acceptable for Hacktoberfest
 isAccepted() {
   local merge_date="$2"
   local hacktoberfest_approved="$1"
@@ -35,7 +63,6 @@ isAccepted() {
   #is the merge_date empty?
   if [ -z "$merge_date" ]
   then
-    #echo "mergeDate: $merge_date"
     # it has not been merged
     if test "$hacktoberfest_approved" == "true"
     then
@@ -44,7 +71,6 @@ isAccepted() {
       echo "false"
     fi
   else
-        #echo "mergeDate (set): $merge_date"
     # the PR has been merged
     echo "true"
   fi
@@ -81,9 +107,9 @@ lookupHacktoberfestTopic() {
     fi
 
   done < <(tail -n +2 ${raw_csv_file})
-
 }
 
+# Function that retrieves and processes the GitHub information for a given organization
 getOrganizationData() {
   local org="$1"
   local json_filename="json_data/${org}"
