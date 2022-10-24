@@ -44,16 +44,20 @@ label_invalid_regex='\binvalid\b'
 # csv files
 current_time=$(date "+%Y%m%d-%H%M%S")
 data_filename_root="data/hacktoberfest"
-csv_filename_latest="${data_filename_root}_latest.csv"
-summaryFileContribs_latest="${data_filename_root}_summary_latest.csv"
-csv_filename="${data_filename_root}_${current_time}.csv"
 raw_csv_filename="${data_filename_root}_raw_${current_time}.csv"
-summaryFileContribs="${data_filename_root}_contribs_$current_time.csv"
+csv_filename="${data_filename_root}_${current_time}.csv"
+csv_filename_latest="${data_filename_root}_latest.csv"
+summaryFileContribs="${data_filename_root}_contributors_$current_time.csv"
+summaryFileContribs_latest="${data_filename_root}_contributors_latest.csv"
+
+# CSV file with the hacktoberfest repositories
+repos_csv_file="repo_data/hacktoberfest_repos_latest.csv"
 
 # create the data directory if it doesn't exist
 [ -d data ] || mkdir data
 [ -d json_data ] || mkdir json_data
 ##
+
 
 # Function to facilitate checking whether a PR is complete and acceptable for Hacktoberfest
 isAccepted() {
@@ -66,19 +70,18 @@ isAccepted() {
     # it has not been merged
     if test "$hacktoberfest_approved" == "true"
     then
-      echo "true"
+      echo "1"
     else
-      echo "false"
+      echo "0"
     fi
   else
     # the PR has been merged
-    echo "true"
+    echo "1"
   fi
 }
 
 # Loops through the raw CSV to see if the PR is a hacktoberfest candidate
 lookupHacktoberfestTopic() {
-  local repos_csv_file="repo_data/hacktoberfest_repos_latest.csv"
   local raw_csv_file="$1"
   local output_csv_file="$2"
 
@@ -105,7 +108,6 @@ lookupHacktoberfestTopic() {
         echo "$org,$repository,$is_hacktoberfest_repo,$url,$state,$created_at,$merged_at,$user_login,$is_hacktoberfest_labeled,$approved,$spam,$invalid,$hacktoberfest_complete,$title" >> "${output_csv_file}"
       fi 
     fi
-
   done < <(tail -n +2 ${raw_csv_file})
 }
 
@@ -120,12 +122,14 @@ getOrganizationData() {
   local page=1
   while true; do
     echo "org: $org get page $page"
-    gh api -H "Accept: application/vnd.github+json" "/search/issues?q=$url_encoded_query&sort=updated&order=desc&per_page=100&page=$page" >"$json_filename$page.json"
+    gh api -H "Accept: application/vnd.github+json Retry-After: 30" "/search/issues?q=$url_encoded_query&sort=updated&order=desc&per_page=100&page=$page" >"$json_filename$page.json"
     # less accurate, can make 1 useless call if the number of issues is a multiple of 100
     if test "$(jq --raw-output '.items|length' "$json_filename$page.json")" -ne 100; then
       break
     fi
     ((page++))
+    # Dirty trick to a avoid hitting secondary rate limit.
+    sleep 15
   done
 
   jq --arg org "$org" --arg hacktoberfest_labeled "$label_hacktoberfest" --arg accepted_arg "$label_accepted" --arg spam "$label_spam_regex" --arg invalid "$label_invalid_regex" --raw-output --slurp --from-file json_to_csv.jq "$json_filename"*.json >>"$raw_csv_filename"
@@ -139,20 +143,50 @@ echo 'org,repository,url,state,created_at,merged_at,user.login,is_hacktoberfest_
 getOrganizationData jenkinsci
 getOrganizationData jenkins-infra
 
-# Update the list of participating repositories
-./hacktoberfest-repositories.sh
+# # Update the list of participating repositories (only if it doesn't exist)
+if [ ! -f ${repos_csv_file} ]
+then
+  ./hacktoberfest-repositories.sh
+fi
+
 
 # Look through the generated file and lookup the repositories that have the hacktoberfest topic
 lookupHacktoberfestTopic ${raw_csv_filename} ${csv_filename} 
 
+#https://medium.com/clarityai-engineering/back-to-basics-how-to-analyze-files-with-gnu-commands-fe9f41665eb3
+# awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' hacktoberfest_20220928-162143.csv
+awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' $csv_filename | datamash -t, --sort --headers groupby 8 sum 13 > "$summaryFileContribs"
+echo "----------------------------------------"
+cat $summaryFileContribs
+
 # update the latest
 cp ${csv_filename} ${csv_filename_latest}
-# #cp $summaryFileContribs $summaryFileContribs_latest
+cp $summaryFileContribs $summaryFileContribs_latest
 
 
+echo "----------------------------------------"
+echo " SUMMARY"
+echo "----------------------------------------"
+# total not automated PRs in Jenkinsci and Jenkin-infra organisation
+wrk_raw_pr=$(cat ${raw_csv_filename} | wc -l)
+raw_pr=$(echo "${wrk_raw_pr}" | xargs)
+echo "Total number of PRs created in jenkinsci and jenkins-infra orgs: ${raw_pr}"
+set +x
 
-# #https://medium.com/clarityai-engineering/back-to-basics-how-to-analyze-files-with-gnu-commands-fe9f41665eb3
-# # awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' hacktoberfest_20220928-162143.csv
-# awk -F'"' -v OFS='"' '{for (i=2; i<=NF; i+=2) {gsub(",", "", $i)}}; $0' $filename | datamash -t, --sort --headers groupby 8 count 13 > "$summaryFileContribs"
-# echo "----------------------------------------"
-# cat $summaryFileContribs
+# Total Hacktoberfest PRs
+wrk_tot_pr=$(wc -l < <(tail -n +2 ${csv_filename}))
+tot_pr=$(echo "${wrk_tot_pr}" | xargs)
+# Total number of Hacktoberfest contributors
+wrk_tot_contributors=$(wc -l < <(tail -n +2 ${summaryFileContribs}))
+tot_contributors=$(echo "${wrk_tot_contributors}" | xargs)
+# Display these results
+echo "Total Hacktoberfest PRs: ${tot_pr} (by ${tot_contributors} contributors)"
+
+# Total number of validated hacktoberfest PRs
+wrk_tot_valid_pr=$(cat ${csv_filename}| grep ",1,\"" | wc -l)
+tot_valid_pr=$(echo "${wrk_tot_valid_pr}" | xargs)
+# Total number of Hacktoberfest contributors with valid PRs
+wrk_tot_valid_contributors=$(tail -n +2  $summaryFileContribs | grep -v "\",0" | wc -l)
+tot_valid_contributors=$(echo "${wrk_tot_valid_contributors}" | xargs)
+# Display these results
+echo "Total validated Hacktoberfest PRs: ${tot_valid_pr} (by ${tot_valid_contributors} contributors)"

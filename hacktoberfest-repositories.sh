@@ -1,5 +1,24 @@
 #!/usr/bin/env bash
 
+# check wether required tools are available
+if ! command -v "gh" >/dev/null 2>&1
+then
+  echo "ERROR: command line 'gh' required but not found. Exiting."
+  exit 1
+fi
+
+if ! command -v "jq" >/dev/null 2>&1
+then
+  echo "ERROR: command line 'jq' required but not found. Exiting."
+  exit 1
+fi
+
+if ! command -v "datamash" >/dev/null 2>&1
+then
+  echo "ERROR: command line 'datamash' required but not found. Exiting."
+  exit 1
+fi
+
 ## config
 query='org:jenkinsci org:jenkins-infra topic:hacktoberfest fork:true'
 
@@ -40,10 +59,13 @@ echo 'org,name,url' >"$filename"
 
 getRepositories
 
-echo "----------------------------------"
+echo "---------------------------------------"
 cat $filename | datamash -t, --sort --headers groupby 1 count 1 > "$summary_filename"
 cat $summary_filename
-echo "----------------------------------"
+echo "---------------------------------------"
+nbr_repos=$(wc -l < <(tail -n +2 ${filename}))
+echo "Total number of repositories: ${nbr_repos}"
+echo "---------------------------------------"
 
 
 # update the latest
