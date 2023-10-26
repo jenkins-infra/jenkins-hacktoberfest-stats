@@ -29,7 +29,7 @@ fi
 ### Setting up constants
 
 # We exclude the PRs created by dependabot and renovate and those created outside the period
-hacktoberfest_year="2022"
+hacktoberfest_year="2023"
 query="is:pr -author:app/dependabot -author:app/renovate created:${hacktoberfest_year}-10-01..${hacktoberfest_year}-10-31"
 
 #Spec: is "hacktoberfest" flag set? 
