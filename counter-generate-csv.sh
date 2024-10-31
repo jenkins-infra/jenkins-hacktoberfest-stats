@@ -30,7 +30,7 @@ fi
 
 # We exclude the PRs created by dependabot and renovate and those created outside the period
 hacktoberfest_year=$(date "+%Y")
-query="is:pr -author:app/dependabot -author:app/renovate created:${hacktoberfest_year}-10-01..${hacktoberfest_year}-10-31"
+query="is:pr -author:app/dependabot -author:app/renovate"
 
 # Spec: is "hacktoberfest" flag set?
 label_hacktoberfest='\bhacktoberfest\b'
@@ -109,18 +109,19 @@ lookupHacktoberfestTopic() {
   done < <(tail -n +2 ${raw_csv_file})
 }
 
-# Function that retrieves and processes the GitHub information for a given organization
+# Function that retrieves and processes the GitHub information for a given organization and date range
 getOrganizationData() {
-  echo "Getting org data for $1"
   local org="$1"
-  local json_filename="json_data/${org}"
+  local start_date="$2"
+  local end_date="$3"
+  local json_filename="json_data/${org}_${start_date}_to_${end_date}"
 
   rm -f "$json_filename"*.json
   local url_encoded_query
-  url_encoded_query=$(jq --arg query "org:$org $query" --raw-output --null-input '$query|@uri')
+  url_encoded_query=$(jq --arg query "org:$org $query created:$start_date..$end_date" --raw-output --null-input '$query|@uri')
   local page=1
   while true; do
-    echo "org: $org get page $page"
+    echo "org: $org get page $page for date range $start_date to $end_date"
     gh api -H "Accept: application/vnd.github+json Retry-After: 30" "/search/issues?q=$url_encoded_query&sort=updated&order=desc&per_page=100&page=$page" >"$json_filename$page.json"
     # Less accurate, can make 1 useless call if the number of issues is a multiple of 100
     if test "$(jq --raw-output '.items|length' "$json_filename$page.json")" -ne 100; then
@@ -137,12 +138,13 @@ getOrganizationData() {
 # Spec: Produce a CSV list of PRs with following details: PR URL, PR Title, Repository, Status (Open, Merged), Creation date, Merge date (if applicable), PR Author, Is flag “Hacktoberfest-approved” set?
 echo 'org,repository,url,state,created_at,merged_at,user.login,is_hacktoberfest_labeled,approved,spam,invalid,title' >"$raw_csv_filename"
 
-# Seems not possible to query both org at the same time
-# Spec: PRs in all repositories of j
-#getOrganizationData jenkins-docs, enkinsci and jenkins-infra
-getOrganizationData jenkins-docs
-getOrganizationData jenkinsci
-getOrganizationData jenkins-infra
+# Loop through the weeks in October
+for start_date in {01..31..7}; do
+  end_date=$(date -d "$hacktoberfest_year-10-$start_date +6 days" "+%Y-%m-%d")
+  getOrganizationData jenkins-docs "$hacktoberfest_year-10-$start_date" "$end_date"
+  getOrganizationData jenkinsci "$hacktoberfest_year-10-$start_date" "$end_date"
+  getOrganizationData jenkins-infra "$hacktoberfest_year-10-$start_date" "$end_date"
+done
 
 # Update the list of participating repositories (only if it doesn't exist)
 if [ ! -f ${repos_csv_file} ]
@@ -169,7 +171,7 @@ echo "----------------------------------------"
 # Total not automated PRs in Jenkinsci and Jenkin-infra organisation
 wrk_raw_pr=$(cat ${raw_csv_filename} | wc -l)
 raw_pr=$(echo "${wrk_raw_pr}" | xargs)
-echo "Total number of PRs created in jenkinsci and jenkins-infra orgs: ${raw_pr}"
+echo "Total number of PRs created in jenkins-docs, jenkinsci and jenkins-infra orgs: ${raw_pr}"
 set +x
 
 # Total Hacktoberfest PRs
