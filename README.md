@@ -20,3 +20,9 @@ The scripts require the following tools to be installed:
 - `datamash`: CSV data manipulation tool 
 
 Special thanks to Jean-Marc Desprez (@jmdesprez)for having provided the original scripts.
+
+# Results
+## 2024
+- Total number of PRs created in jenkinsci and jenkins-infra orgs: `1086`
+- Total Hacktoberfest PRs: `231` (by `63` contributors)
+- Total validated Hacktoberfest PRs: `209` (by `56` contributors)
